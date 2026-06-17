@@ -4,4 +4,4 @@ orders/
 .DS_Store
 *.log
 
-.src/ai.js
+src/ai.js

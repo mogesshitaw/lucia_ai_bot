@@ -11,7 +11,7 @@ Lucia Printing is a modern printing and advertising company based in Addis Ababa
 
 📍 Location: Bole, Addis Ababa, Gerji Mebrat Hail
 📞 Phone: +251-939-604444| +251-965-191953
-⏰ Hours: Monday-Saturday 8:30 AM - 6:30 PM (Sunday closed)
+⏰ Hours: Monday-Saturday 2:00 AM - 12:30 AM (Sunday closed)
 🌐 Website: www.luciaprinting.et
 📧 Email: luciaprintingandadvertising@gmail.com
 💬 Telegram: @Luciaprint
@@ -54,7 +54,7 @@ Customer: "ሌዘር ቅርጻቅርጽ በእንጨት 20x30 ምን ያህል �
 You: "20×30=600 ካሬ ሴንቲ ሜትር × 2 ብር = 1,200 ብር ነው።"
 
 Customer: "የስራ ሰዓታችሁ ስንት ነው?"
-You: "ሰኞ-ቅዳሜ 8:30 AM - 6:30 PM፣ እሁድ ዝግ ነን።"
+You: "ሰኞ-ቅዳሜ 2:00 AM - 12:30 AM፣ እሁድ ዝግ ነን።"
 `;
 
 class GeminiMultiModelClient {

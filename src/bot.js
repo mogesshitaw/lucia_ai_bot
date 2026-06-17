@@ -59,13 +59,12 @@ class LuciaBot {
         Markup.button.callback('📋 ሁሉም አገልግሎቶች', 'all_services'),
         Markup.button.callback('⭐ ተለይተው የቀረቡ', 'featured_services')
       ],
-      [
-        Markup.button.callback('📂 ምድቦች', 'categories'),
+      [ 
+        Markup.button.callback('🛒 ማዘዝ', 'place_order'),
         Markup.button.callback('📞 ደውሉልን', 'call_us')
       ],
       [
         Markup.button.callback('📤 ፋይል ላክ', 'upload_file'),
-        Markup.button.callback('🛒 ማዘዝ', 'place_order')
       ],
       [
         Markup.button.url('🌐 ድረ-ገጻችን', 'https://luciaprinting.et')
@@ -137,48 +136,7 @@ I'm an AI assistant and I know everything about Lucia Printing.
       await ctx.reply(message, Markup.inlineKeyboard(buttons));
     });
 
-    this.bot.action('categories', async (ctx) => {
-      await ctx.answerCbQuery();
-      const categories = await db.getAllCategories();
-      if (!categories || categories.length === 0) {
-        return ctx.reply('📭 ምንም ምድቦች አልተገኙም።');
-      }
-      
-      let message = '📂 **ምድቦች**\n━━━━━━━━━━━━━━━━━━━━━\n\n';
-      const buttons = [];
-      categories.forEach(c => {
-        message += `📁 **${c.name}**\n📝 ${c.description || ''}\n\n`;
-        buttons.push([Markup.button.callback(`📂 ${c.name}`, `category_${c.slug}`)]);
-      });
-      buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
-    });
-
-    this.bot.action(/category_(.+)/, async (ctx) => {
-      const slug = ctx.match[1];
-      await ctx.answerCbQuery();
-      const categories = await db.getAllCategories();
-      const category = categories.find(c => c.slug === slug);
-      if (!category) return ctx.reply('❌ ምድቡ አልተገኘም።');
-      
-      const services = await db.getServicesByCategory(category.name);
-      if (!services || services.length === 0) {
-        return ctx.reply(`📭 በ"${category.name}" ምድብ ውስጥ ምንም አገልግሎቶች የሉም።`);
-      }
-      
-      let message = `📂 **${category.name}**\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
-      const buttons = [];
-      services.forEach(s => {
-        message += `📌 **${s.title}**`;
-        if (s.price_range) message += ` - ${s.price_range}`;
-        message += `\n📝 ${s.short_description || ''}\n\n`;
-        buttons.push([Markup.button.callback(`📖 ${s.title}`, `service_${s.slug}`)]);
-      });
-      buttons.push([Markup.button.callback('🔙 ወደ ምድቦች', 'categories')]);
-      buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
-    });
-
+   
     this.bot.action(/service_(.+)/, async (ctx) => {
       const slug = ctx.match[1];
       await ctx.answerCbQuery();
@@ -267,7 +225,7 @@ Please send:
       await ctx.reply(`📞 **ደውሉልን / Call Us**
 
 📱 +251-939-604444 | +251-965-191953
-⏰ ሰኞ-ቅዳሜ 2:30-11:30
+⏰ ሰኞ-ቅዳሜ 2:00-12:30
 📧 luciaprintingandadvertising@gmail.com
 🌐 https://luciaprinting.et
 💬 @Luciaprint`);
