@@ -266,9 +266,9 @@ Please send:
       await ctx.answerCbQuery();
       await ctx.reply(`📞 **ደውሉልን / Call Us**
 
-📱 +251-911-234567 | +251-912-345678
-⏰ ሰኞ-ቅዳሜ 8:30-6:30
-📧 info@luciaprinting.et
+📱 +251-939-604444 | +251-965-191953
+⏰ ሰኞ-ቅዳሜ 2:30-11:30
+📧 luciaprintingandadvertising@gmail.com
 🌐 https://luciaprinting.et
 💬 @Luciaprint`);
     });
