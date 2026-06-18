@@ -57,214 +57,37 @@ Customer: "የስራ ሰዓታችሁ ስንት ነው?"
 You: "ሰኞ-ቅዳሜ 2:00 AM - 12:30 AM፣ እሁድ ዝግ ነን።"
 `;
 
-// ================================================================
-// MOCK AI - ኮታ ሲያልቅ የሚሰራ
-// ================================================================
-class MockAI {
-  async sendMessage(userMessage, conversationHistory = []) {
-    const lowerMsg = userMessage.toLowerCase();
-    
-    // ስለ ሉሲያ ጥያቄ
-    if (lowerMsg.includes('ሉሲያ') || lowerMsg.includes('lucia') || lowerMsg.includes('ኩባንያ') || lowerMsg.includes('company')) {
-      return {
-        success: true,
-        message: `🏢 **ስለ ሉሲያ ህትመት / About Lucia Printing**
-
-ሉሲያ ህትመት በኢትዮጵያ ውስጥ ዘመናዊ የህትመት እና የማስታወቂያ አገልግሎት ሰጪ ኩባንያ ነው።
-
-📍 **አድራሻ:** ቦሌ ፣ ገርጂ ፣ ብርሃን ህንፃ
-📞 **ስልክ:** +251-939-604444 | +251-965-191953
-⏰ **የስራ ሰዓት:** ሰኞ-ቅዳሜ 2:00 AM - 12:30 AM (እሁድ ዝግ)
-🌐 **ድረ-ገጽ:** www.luciaprinting.et
-📧 **ኢሜይል:** luciaprintingandadvertising@gmail.com
-💬 **ቴሌግራም:** @Luciaprint
-
-**አገልግሎቶቻችን:**
-1. 👕 ዲቲኤፍ ቲሸርት ህትመት
-2. 🔴 ሌዘር ቅርጻቅርጽ እና መቁረጥ
-3. 📢 ባነር እና ማስታወቂያ
-4. 📇 ቢዝነስ ካርድ
-5. 📎 ስቲከር ህትመት
-
-ለበለጠ መረጃ ከሰው አገልግሎታችን ጋር ያነጋግሩ!`
-      };
-    }
-    
-    // አገልግሎቶች
-    if (lowerMsg.includes('አገልግሎት') || lowerMsg.includes('service')) {
-      return {
-        success: true,
-        message: `📋 **የሉሲያ ህትመት አገልግሎቶች / Lucia Printing Services**
-
-1. 👕 **ዲቲኤፍ ቲሸርት ህትመት**
-   • አንድ: 150 ብር | 10+: 120 ብር
-   • ጥጥ, ፖሊስተር, ብሌንድ
-   • ጊዜ: 2-3 ቀን
-
-2. 🔴 **ሌዘር ቅርጻቅርጽ**
-   • 2 ብር/ሴሜ²
-   • እንጨት, አክሬሊክ, ቆዳ, ብርጭቆ
-   • ጊዜ: 1-3 ቀን
-
-3. 📢 **ባነር እና ማስታወቂያ**
-   • 350-650 ብር/m²
-   • ጊዜ: 2-4 ቀን
-
-4. 📇 **ቢዝነስ ካርድ** - 500 ብር/100 ቁራጭ
-5. 📎 **ስቲከር** - 5 ብር/ቁራጭ (50+)
-
-ለበለጠ መረጃ ከሰው አገልግሎታችን ጋር ያነጋግሩ!`
-      };
-    }
-    
-    // ማዘዝ
-    if (lowerMsg.includes('ማዘዝ') || lowerMsg.includes('order')) {
-      return {
-        success: true,
-        message: `🛒 **ማዘዝ / Place Order**
-
-እባክዎ የሚከተሉትን መረጃዎች ይላኩልኝ:
-
-1️⃣ ሙሉ ስም / Full Name
-2️⃣ ስልክ ቁጥር / Phone Number
-3️⃣ የሚፈልጉት አገልግሎት / Service
-4️⃣ ብዛት / Quantity
-
-ከዚያ ለሰው አገልግሎት እናስተላልፋለን።
-
-👤 @Luciaprint`
-      };
-    }
-    
-    // አድራሻ
-    if (lowerMsg.includes('አድራሻ') || lowerMsg.includes('address') || lowerMsg.includes('location')) {
-      return {
-        success: true,
-        message: `📍 **አድራሻ / Address**
-
-ቦሌ ፣ ገርጂ ፣ ብርሃን ህንፃ
-
-Bole, Gerji, Mebrat Hail Building
-
-📞 +251-939-604444 | +251-965-191953
-🌐 www.luciaprinting.et
-💬 @Luciaprint`
-      };
-    }
-    
-    // የስራ ሰዓት
-    if (lowerMsg.includes('ሰዓት') || lowerMsg.includes('hours') || lowerMsg.includes('time')) {
-      return {
-        success: true,
-        message: `⏰ **የስራ ሰዓት / Business Hours**
-
-ሰኞ - ቅዳሜ: 2:00 AM - 12:30 AM
-እሁድ: ዝግ / Closed
-
-Monday - Saturday: 2:00 AM - 12:30 AM
-Sunday: Closed`
-      };
-    }
-    
-    // ዋጋ ማስላት
-    const numbers = userMessage.match(/\d+/g);
-    if (lowerMsg.includes('ቲሸርት') || lowerMsg.includes('tshirt')) {
-      let qty = 1;
-      if (numbers && numbers.length > 0) {
-        qty = parseInt(numbers[0]);
-      }
-      const price = qty >= 10 ? 120 : 150;
-      const total = qty * price;
-      return {
-        success: true,
-        message: `👕 **ቲሸርት ህትመት / T-Shirt Printing**
-
-${qty} ቲሸርት(ቶች):
-• በአንድ: ${price} ብር
-• ድምር: ${total} ብር
-
-${qty >= 10 ? '✅ የጅምላ ቅናሽ አግኝተዋል! (10+ ቲሸርቶች)' : '💡 ከ10 በላይ ከሆነ 120 ብር እያንዳንዱ ነው!'}
-
-ለማዘዝ: @Luciaprint`
-      };
-    }
-    
-    if (lowerMsg.includes('ሌዘር') || lowerMsg.includes('laser')) {
-      if (numbers && numbers.length >= 2) {
-        const length = parseInt(numbers[0]);
-        const width = parseInt(numbers[1]);
-        const area = length * width;
-        const price = area * 2;
-        return {
-          success: true,
-          message: `🔴 **ሌዘር ቅርጻቅርጽ / Laser Engraving**
-
-ርዝመት: ${length} ሴ.ሜ
-ስፋት: ${width} ሴ.ሜ
-አካባቢ: ${area} ሴሜ²
-ዋጋ: ${area} × 2 ብር = ${price} ብር
-
-💡 ለሌሎች ቁሳቁሶች ዋጋ ሊለያይ ይችላል
-
-ለማዘዝ: @Luciaprint`
-        };
-      }
-      return {
-        success: true,
-        message: `🔴 **ሌዘር ቅርጻቅርጽ / Laser Engraving**
-
-ዋጋ: 2 ብር በካሬ ሴ.ሜ (cm²)
-ቀመር: ርዝመት × ስፋት × 2 ብር
-
-ምሳሌ: 10cm × 20cm = 200 ሴሜ² × 2 = 400 ብር
-
-ርዝመት እና ስፋት ይንገሩኝ!`
-      };
-    }
-    
-    // መደበኛ ምላሽ
-    return {
-      success: true,
-      message: `🌟 **ሉሲያ ህትመት / Lucia Printing**
-
-እንኳን ደህና መጡ! እኔ የሉሲያ ህትመት ረዳት ነኝ።
-
-**አገልግሎቶቻችን / Our Services:**
-1. 👕 ዲቲኤፍ ቲሸርት - 150-120 ብር
-2. 🔴 ሌዘር ቅርጻቅርጽ - 2 ብር/ሴሜ²
-3. 📢 ባነር - 350-650 ብር/m²
-4. 📇 ቢዝነስ ካርድ - 500 ብር/100 ቁራጭ
-5. 📎 ስቲከር - 5 ብር/ቁራጭ
-
-💬 ማንኛውንም ጥያቄ መጠየቅ ይችላሉ!
-📞 @Luciaprint`
-    };
-  }
-}
-
-// ================================================================
-// GEMINI AI CLIENT (ከQuota መፍትሄ ጋር)
-// ================================================================
 class GeminiMultiModelClient {
   constructor(apiKey) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.modelQueue = [
-      { name: "gemini-3.5-flash", priority: 1, description: "የመጀመሪያ ምርጫ - እጅግ ፈጣን" },
-      { name: "gemini-3.1-flash-lite", priority: 2, description: "ሁለተኛ አማራጭ - ፈጣን እና ርካሽ" },
-      { name: "gemini-2.5-flash", priority: 3, description: "ሶስተኛ አማራጭ - የተረጋጋ" },
-      { name: "gemini-3.1-pro", priority: 4, description: "የመጨረሻ አማራጭ - ኃይለኛ" }
-    ];
+   this.modelQueue = [
+  { 
+    name: "gemini-3.5-flash", 
+    priority: 1, 
+    description: "የመጀመሪያ ምርጫ - እጅግ ፈጣን፣ ዘመናዊ እና ለቦት ስራዎች ምርጥ" 
+  },
+  { 
+    name: "gemini-3.1-flash-lite", 
+    priority: 2, 
+    description: "ሁለተኛ አማራጭ - በጣም ፈጣን እና እጅግ ርካሽ የፍጥነት ማማ" 
+  },
+  { 
+    name: "gemini-2.5-flash", 
+    priority: 3, 
+    description: "ሶስተኛ አማራጭ - በምርት ላይ የተረጋገጠ እጅግ ጽኑ እና አስተማማኝ" 
+  },
+  { 
+    name: "gemini-3.1-pro", 
+    priority: 4, 
+    description: "የመጨረሻ አማራጭ - እጅግ ኃይለኛ የሎጂክ እና የኮዲንግ አእምሮ" 
+  }
+];
     
     this.currentModelIndex = 0;
     this.activeModel = null;
     this.modelFailures = new Map();
-    this.quotaExhausted = false;
-    this.useMockFallback = true; // ኮታ ሲያልቅ ወደ ሞክ ይቀየር
     
-    // Mock AI instance
-    this.mockAI = new MockAI();
-    
-    // የዳታቤዝ መረጃ መሸጎጫ
+    // የዳታቤዝ መረጃ መሸጎጫ (Cache) - በየ5 ደቂቃ ይታደሳል
     this.cachedServices = null;
     this.cachedCategories = null;
     this.cacheTimestamp = null;
@@ -294,12 +117,6 @@ class GeminiMultiModelClient {
         return true;
       } catch (error) {
         this.modelFailures.set(modelInfo.name, true);
-        // ኮታ ከሆነ ወደ ሞክ ይቀየር
-        if (error.message.includes('429') || error.message.includes('quota')) {
-          console.log('⚠️ Quota exceeded! Switching to Mock mode...');
-          this.quotaExhausted = true;
-          return false;
-        }
       }
     }
     return false;
@@ -308,20 +125,16 @@ class GeminiMultiModelClient {
   async switchToNextModel() {
     this.modelFailures.set(this.modelQueue[this.currentModelIndex].name, true);
     this.currentModelIndex++;
-    if (this.currentModelIndex >= this.modelQueue.length) {
-      // ሁሉም ሞዴሎች ከተሳኑ ወደ ሞክ ይቀየር
-      this.quotaExhausted = true;
-      console.log('⚠️ All models failed! Switching to Mock mode...');
-      return false;
-    }
+    if (this.currentModelIndex >= this.modelQueue.length) return false;
     return await this.initModel();
   }
 
   // ================================================================
-  // ከዳታቤዝ መረጃ ማግኘት
+  // ከዳታቤዝ በቀጥታ መረጃ ማግኘት (Real-time)
   // ================================================================
   async getFreshServiceData() {
     try {
+      // መሸጎጫ ትክክለኛ ከሆነ ይጠቀሙ
       if (this.cachedServices && this.cacheTimestamp && 
           (Date.now() - this.cacheTimestamp) < this.cacheTTL) {
         console.log('📊 Using cached service data');
@@ -330,15 +143,20 @@ class GeminiMultiModelClient {
 
       console.log('📊 Fetching fresh data from database...');
       
+      // ሁሉንም አገልግሎቶች ያግኙ
       const services = await db.getAllServices();
+      
+      // ሁሉንም ምድቦች ያግኙ
       const categories = await db.getAllCategories();
       
+      // ለእያንዳንዱ አገልግሎት ዝርዝር መረጃ ያግኙ
       const enrichedServices = [];
       for (const service of services) {
         const fullService = await db.getServiceBySlug(service.slug);
         enrichedServices.push(fullService || service);
       }
       
+      // መሸጎጫ ያዘምኑ
       this.cachedServices = enrichedServices;
       this.cachedCategories = categories;
       this.cacheTimestamp = Date.now();
@@ -353,12 +171,14 @@ class GeminiMultiModelClient {
   }
 
   // ================================================================
-  // የዳታቤዝ መረጃን ወደ ጽሁፍ መቀየር
+  // የዳታቤዝ መረጃን ወደ ጽሁፍ መቀየር (ለAI)
   // ================================================================
   buildServiceDataText(services, categories) {
     let text = '\n## 📋 REAL-TIME SERVICE DATA FROM DATABASE\n';
-    text += '⚠️ ይህ መረጃ በቀጥታ ከዳታቤዝ የተወሰደ ነው!\n\n';
+    text += '⚠️ ይህ መረጃ በቀጥታ ከዳታቤዝ የተወሰደ ነው! ሁልጊዜ አዲስ ነው!\n';
+    text += '⚠️ This data is fetched directly from the database! Always up-to-date!\n\n';
     
+    // ምድቦች
     if (categories.length > 0) {
       text += '### 📂 CATEGORIES / ምድቦች:\n';
       categories.forEach(c => {
@@ -369,52 +189,89 @@ class GeminiMultiModelClient {
       text += '\n';
     }
     
-    text += '### 🎯 ALL SERVICES WITH CURRENT PRICES:\n\n';
+    // ሁሉም አገልግሎቶች
+    text += '### 🎯 ALL SERVICES WITH CURRENT PRICES / ሁሉም አገልግሎቶች ከዋጋ ጋር:\n\n';
     
     services.forEach((s, index) => {
       text += `#### ${index + 1}. ${s.title || 'N/A'}\n`;
       text += `- **Slug:** ${s.slug || 'N/A'}\n`;
-      text += `- **ማጠቃለያ:** ${s.short_description || 'N/A'}\n`;
+      text += `- **ማጠቃለያ / Short Description:** ${s.short_description || 'N/A'}\n`;
       if (s.full_description) {
-        text += `- **ዝርዝር:** ${s.full_description.substring(0, 200)}${s.full_description.length > 200 ? '...' : ''}\n`;
+        text += `- **ዝርዝር / Full Description:** ${s.full_description.substring(0, 300)}${s.full_description.length > 300 ? '...' : ''}\n`;
       }
       text += `- **💰 ዋጋ / Price:** ${s.price_range || 'N/A'}\n`;
-      text += `- **📦 ዝቅተኛ ትዕዛዝ:** ${s.min_order || 'N/A'}\n`;
-      text += `- **⏱️ ጊዜ:** ${s.turnaround || 'N/A'}\n`;
-      text += `- **📁 ምድብ:** ${s.category || 'N/A'}\n`;
+      text += `- **📦 ዝቅተኛ ትዕዛዝ / Min Order:** ${s.min_order || 'N/A'}\n`;
+      text += `- **⏱️ ጊዜ / Turnaround:** ${s.turnaround || 'N/A'}\n`;
+      text += `- **📁 ምድብ / Category:** ${s.category || 'N/A'}\n`;
       
       if (s.features && s.features.length > 0) {
-        text += `- **✨ ባህሪያት:** ${s.features.join(', ')}\n`;
+        text += `- **✨ ባህሪያት / Features:** ${s.features.join(', ')}\n`;
       }
       
       if (s.materials && s.materials.length > 0) {
-        text += `- **📦 ቁሳቁሶች:** ${s.materials.join(', ')}\n`;
+        text += `- **📦 ቁሳቁሶች / Materials:** ${s.materials.join(', ')}\n`;
+      }
+      
+      if (s.formats && s.formats.length > 0) {
+        text += `- **📐 ቅርጸቶች / Formats:** ${s.formats.join(', ')}\n`;
+      }
+      
+      if (s.colors && s.colors.length > 0) {
+        text += `- **🎨 ቀለሞች / Colors:** ${s.colors.join(', ')}\n`;
+      }
+      
+      if (s.faqs && s.faqs.length > 0) {
+        text += `- **❓ ተደጋጋሚ ጥያቄዎች / FAQs:**\n`;
+        s.faqs.slice(0, 3).forEach(faq => {
+          text += `  Q: ${faq.question}\n  A: ${faq.answer}\n`;
+        });
+        if (s.faqs.length > 3) {
+          text += `  ... ${s.faqs.length - 3} more FAQs\n`;
+        }
+      }
+      
+      // የምስል መረጃ
+      if (s.images && s.images.length > 0) {
+        text += `- **🖼️ ምስሎች / Images:** ${s.images.length} available\n`;
       }
       
       text += '\n---\n\n';
     });
     
     text += `\n📊 **በድምሩ ${services.length} አገልግሎቶች ከዳታቤዝ ተገኝተዋል!**\n`;
+    text += `📊 **Total ${services.length} services fetched from database!**\n\n`;
+    text += '⚠️ **ማስታወሻ:** ይህ መረጃ በቀጥታ ከዳታቤዝ የተወሰደ ነው። ማንኛውም ለውጥ በዳታቤዝ ላይ ሲደረግ እዚህ ይንጸባረቃል!';
+    text += '\n⚠️ **Note:** This data is directly from the database. Any changes in the database will be reflected here!';
     
     return text;
   }
 
   // ================================================================
-  // ዋናው sendMessage
+  // ዋናው sendMessage - ከዳታቤዝ ጋር በቀጥታ የተዋሃደ
   // ================================================================
   async sendMessage(userMessage, conversationHistory = []) {
-    // ኮታ ካልቀረ ወይም ሞክ ሞድ ከሆነ
-    if (this.quotaExhausted || !this.activeModel) {
-      console.log('🔄 Using Mock AI (quota exhausted or no model available)');
-      return await this.mockAI.sendMessage(userMessage, conversationHistory);
+    if (!this.activeModel) {
+      const initialized = await this.initModel();
+      if (!initialized) {
+        return {
+          success: false,
+          message: '⚠️ AI አገልግሎቱ ለጊዜው አይገኝም። እባክዎ ቆይተው ይሞክሩ።'
+        };
+      }
     }
 
     try {
       console.log('💬 Processing message:', userMessage.substring(0, 50) + '...');
       
+      // ============================================================
+      // 1. ከዳታቤዝ ትኩስ መረጃ ያግኙ (Real-time)
+      // ============================================================
       const { services, categories } = await this.getFreshServiceData();
       const serviceDataText = this.buildServiceDataText(services, categories);
       
+      // ============================================================
+      // 2. የውይይት ታሪክ ያግኙ
+      // ============================================================
       let historyText = '';
       if (conversationHistory && conversationHistory.length > 0) {
         historyText = '\n=== PREVIOUS CONVERSATION ===\n';
@@ -426,11 +283,17 @@ class GeminiMultiModelClient {
         historyText += '\n';
       }
       
+      // ============================================================
+      // 3. ሙሉ ፕሮምፕት ይገንቡ
+      // ============================================================
       let fullPrompt = BASE_SYSTEM_PROMPT;
       fullPrompt += serviceDataText;
       fullPrompt += historyText;
       fullPrompt += `\n=== CURRENT CUSTOMER MESSAGE ===\nCustomer: ${userMessage}\n\n=== YOUR RESPONSE ===\nLucia Printing Assistant:`;
       
+      // ============================================================
+      // 4. ወደ AI ይላኩ
+      // ============================================================
       const result = await this.activeModel.generateContent(fullPrompt);
       const response = await result.response;
       const aiReply = response.text();
@@ -441,20 +304,14 @@ class GeminiMultiModelClient {
         success: true,
         message: aiReply,
         model: this.modelQueue[this.currentModelIndex].name,
+        dataUpdated: true,
         timestamp: new Date().toISOString()
       };
 
     } catch (error) {
       console.error('AI Error:', error.message);
 
-      // ኮታ ከሆነ ወደ ሞክ ይቀየር
-      if (error.message.includes('429') || error.message.includes('quota')) {
-        this.quotaExhausted = true;
-        console.log('⚠️ Quota exceeded! Switching to Mock mode...');
-        return await this.mockAI.sendMessage(userMessage, conversationHistory);
-      }
-
-      if (error.message.includes('503') || error.message.includes('404')) {
+      if (error.message.includes('503') || error.message.includes('429') || error.message.includes('404')) {
         const switched = await this.switchToNextModel();
         if (switched) {
           return await this.sendMessage(userMessage, conversationHistory);
@@ -463,16 +320,19 @@ class GeminiMultiModelClient {
 
       return {
         success: false,
-        message: '⚠️ ይቅርታ አገልግሎቱ ለጊዜው አይገኝም። እባክዎ ቆይተው ይሞክሩ።'
+        message: '⚠️ ይቅርታ አገልግሎቱ ለጊዜው አይገኝም። እባክዎ ቆይተው ይሞክሩ።\n\nSorry, service temporarily unavailable. Please try again.'
       };
     }
   }
 
+  // ================================================================
+  // መሸጎጫ ለማጽዳት (በእጅ ሲፈለግ)
+  // ================================================================
   clearCache() {
     this.cachedServices = null;
     this.cachedCategories = null;
     this.cacheTimestamp = null;
-    console.log('🔄 Cache cleared');
+    console.log('🔄 Cache cleared - next request will fetch fresh data');
   }
 }
 

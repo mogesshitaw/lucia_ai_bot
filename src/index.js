@@ -10,7 +10,9 @@ const db = require('./database');
 // HEALTH CHECK SERVER (ለRender እና ሌሎች ሆስቶች)
 // ============================================================
 const app = express();
-const port = process.env.PORT || 443;
+// ✅ መስተካከል 1፡ Render ፖርት ካልሰጠን ወደ 8080 ይቀይራል (443 ክራሽ ያደርጋል)
+const port = process.env.PORT || 8080; 
+
 // ለWebhook JSON መቀበል
 app.use(express.json());
 
@@ -36,7 +38,7 @@ app.get('/health', (req, res) => {
 });
 
 // ሰርቨሩን ያስነሱ
-const server = app.listen(port, () => {
+const server = app.listen(port, '0.0.0.0', () => {
     console.log(`✅ Health check server listening on port ${port}`);
     console.log(`📡 Health check: http://localhost:${port}/health`);
 });
@@ -44,29 +46,24 @@ const server = app.listen(port, () => {
 // ============================================================
 // ቦቱን ያስነሱ
 // ============================================================
-
 let aiClient;
 
 try {
-    // Try to load Gemini client
     const GeminiClient = require('./ai-client');
     if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
         aiClient = new GeminiClient(process.env.GEMINI_API_KEY);
         console.log('✅ Using REAL Gemini AI');
     } else {
-        // Use mock client
         const MockClient = require('./ai-client');
         aiClient = new MockClient('mock');
         console.log('⚠️ Using MOCK AI (no API key)');
     }
 } catch (error) {
-    // Fallback to simple mock
     try {
         const MockClient = require('./ai-client');
         aiClient = new MockClient('mock');
         console.log('⚠️ Using MOCK AI (error loading Gemini)');
     } catch (err) {
-        // Ultra simple fallback
         aiClient = {
             async sendMessage(msg) {
                 return { 
@@ -88,9 +85,6 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
     return;
 }
 
-// ============================================================
-// ቦቱን ያስጀምሩ
-// ============================================================
 const bot = new LuciaBot(process.env.TELEGRAM_BOT_TOKEN, aiClient);
 
 // ============================================================
@@ -107,7 +101,6 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Webhook ሁኔታ ለማየት
 app.get('/webhook-info', async (req, res) => {
     try {
         const info = await bot.bot.telegram.getWebhookInfo();
@@ -126,7 +119,8 @@ app.get('/webhook-info', async (req, res) => {
 // Webhook ለማዘጋጀት
 app.get('/set-webhook', async (req, res) => {
     try {
-        const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}:${port}/webhook`;
+        // ✅ መስተካከል 2፡ ከ Render ሊንክ ጀርባ የፖርት ቁጥሩን አጠፋነው
+        const webhookUrl = process.env.WEBHOOK_URL || (process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook` : `http://localhost:${port}/webhook`);
         const result = await bot.bot.telegram.setWebhook(webhookUrl);
         res.json({
             success: true,
@@ -142,7 +136,6 @@ app.get('/set-webhook', async (req, res) => {
     }
 });
 
-// Webhook ለማጥፋት
 app.get('/delete-webhook', async (req, res) => {
     try {
         const result = await bot.bot.telegram.deleteWebhook();
@@ -161,7 +154,6 @@ app.get('/delete-webhook', async (req, res) => {
 
 async function startBot() {
     try {
-        // ዳታቤዝ ያገናኙ
         console.log('🔄 Connecting to database...');
         const connected = await db.connect();
         
@@ -178,8 +170,8 @@ async function startBot() {
         const useWebhook = process.env.USE_WEBHOOK === 'true' || process.env.RENDER_EXTERNAL_HOSTNAME;
         
         if (useWebhook) {
-            // Webhook ሞድ
-            const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}:${port}/webhook`;
+            // ✅ መስተካከል 3፡ እዚህም ላይ የፖርት ቁጥሩን ከሊንኩ ላይ አስወገድነው
+            const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook`;
             console.log(`🔗 Setting webhook to: ${webhookUrl}`);
             
             try {
@@ -191,7 +183,6 @@ async function startBot() {
                 await bot.start();
             }
         } else {
-            // Long Polling ሞድ (ለሙከራ)
             console.log('🔄 Using long polling mode...');
             await bot.start();
         }
@@ -202,7 +193,6 @@ async function startBot() {
         console.log(`📡 Webhook info: http://localhost:${port}/webhook-info`);
         console.log('🤖 Bot is ready to receive messages!');
         
-        // Webhook ሁኔታ አሳይ
         try {
             const info = await bot.bot.telegram.getWebhookInfo();
             console.log('📊 Webhook status:', info.url || 'Not set');
@@ -244,7 +234,6 @@ process.on('SIGINT', () => {
     });
 });
 
-// ያልተያዙ ስህተቶችን ያስተናግዱ
 process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
 });
