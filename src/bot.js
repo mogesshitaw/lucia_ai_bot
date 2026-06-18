@@ -13,7 +13,8 @@ class LuciaBot {
     this.bot = new Telegraf(token);
     this.aiClient = aiClient;
     this.userConversations = new Map();
-    this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint';
+    // 💡 ማሳሰቢያ፡ እዚህ ላይ የቁጥር ID (ለምሳሌ 54321678) በ .env ብታስገባ ይመረጣል
+    this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint'; 
   }
 
   getConversationHistory(userId) {
@@ -72,8 +73,9 @@ class LuciaBot {
     ]);
   }
 
+  // ✅ ማስተካከያ፡ ይህንን ፋንክሽን በ index.js ላይ ስለምንጠራው፣ እዚህ ውስጥ የቦቱን ህግጋት (Listeners) ብቻ ነው የምናዘጋጀው
   async start() {
-    await db.connect();
+    // db.connect() በ index.js ላይ ስለሚሰራ እዚህ ላይ አያስፈልግም፣ ግን ቢኖርም ችግር የለውም
 
     // ==================== /start ====================
     this.bot.start(async (ctx) => {
@@ -81,8 +83,7 @@ class LuciaBot {
 
 Welcome to Lucia Printing!
 
-💬 **ማንኛውንም ጥያቄ በጽሁፍ መጠየቅ ይችላሉ!** 
-እኔ AI ረዳት ነኝ እና ስለ ሉቺያ ህትመት ሁሉንም ነገር አውቃለሁ።
+💬 **ማንኛውንም ጥያቄ በጽሁፍ መጠየቅ ይችላሉ!** እኔ AI ረዳት ነኝ እና ስለ ሉቺያ ህትመት ሁሉንም ነገር አውቃለሁ።
 
 📋 **ለፈጣን አገልግሎት ከታች ያሉትን ቁልፎች መጫን ይችላሉ!**
 
@@ -136,7 +137,6 @@ I'm an AI assistant and I know everything about Lucia Printing.
       await ctx.reply(message, Markup.inlineKeyboard(buttons));
     });
 
-   
     this.bot.action(/service_(.+)/, async (ctx) => {
       const slug = ctx.match[1];
       await ctx.answerCbQuery();
@@ -277,7 +277,6 @@ Please send:
         
         let replyText = response.message || '⚠️ ይቅርታ መልስ ማግኘት አልቻለም።';
         
-        // Add quick action buttons after AI response
         const keyboard = Markup.inlineKeyboard([
           [Markup.button.callback('📋 ሁሉም አገልግሎቶች', 'all_services')],
           [Markup.button.callback('🛒 ማዘዝ', 'place_order'), Markup.button.callback('📞 ደውሉልን', 'call_us')],
@@ -295,12 +294,8 @@ Please send:
 
     this.bot.catch((err) => console.error('Bot error:', err));
     
-    await this.bot.launch();
-    console.log('🤖 Bot is running with Gemini AI!');
-    console.log('💬 All text messages will be answered by AI');
-    
-    process.once('SIGINT', () => this.bot.stop('SIGINT'));
-    process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
+    // ❌ ማስተካከያ ፡ ከዚህ ቦታ ላይ this.bot.launch() እና process.once መስመሮችን አጥፍተናቸዋል።
+    console.log('🤖 LuciaBot Event Listeners Registered Successfully.');
   }
 }
 
