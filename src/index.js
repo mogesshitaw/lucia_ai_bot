@@ -19,19 +19,17 @@ app.get('/', (req, res) => {
         status: 'online',
         service: 'Lucia Printing Bot',
         version: '1.0.0',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
+        mode: 'webhook',
         webhook: process.env.WEBHOOK_URL || 'Not set',
-        port: port
+        timestamp: new Date().toISOString()
     });
 });
 
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString(),
-        port: port
+        mode: 'webhook',
+        uptime: process.uptime()
     });
 });
 
@@ -51,7 +49,7 @@ let aiClient;
 
 try {
     const GeminiClient = require('./ai-client');
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10 && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
         aiClient = new GeminiClient(process.env.GEMINI_API_KEY);
         console.log('✅ Using REAL Gemini AI');
     } else {
@@ -60,21 +58,12 @@ try {
         console.log('⚠️ Using MOCK AI');
     }
 } catch (error) {
-    try {
-        const MockClient = require('./ai-client');
-        aiClient = new MockClient('mock');
-        console.log('⚠️ Using MOCK AI (fallback)');
-    } catch (err) {
-        aiClient = {
-            async sendMessage(msg) {
-                return { 
-                    success: true, 
-                    message: '📝 እባክዎ ከታች ያሉትን ቁልፎች ይጠቀሙ' 
-                };
-            }
-        };
-        console.log('⚠️ Using ULTRA SIMPLE AI');
-    }
+    aiClient = {
+        async sendMessage(msg) {
+            return { success: true, message: '📝 እባክዎ ከታች ያሉትን ቁልፎች ይጠቀሙ' };
+        }
+    };
+    console.log('⚠️ Using simple AI fallback');
 }
 
 if (!process.env.TELEGRAM_BOT_TOKEN) {
@@ -89,7 +78,7 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 const bot = new LuciaBot(process.env.TELEGRAM_BOT_TOKEN, aiClient);
 
 // ============================================================
-// WEBHOOK ENDPOINTS
+// WEBHOOK ENDPOINT - ቴሌግራም መልዕክቶች የሚደርሱበት
 // ============================================================
 app.post('/webhook', async (req, res) => {
     try {
@@ -102,72 +91,124 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
+// Webhook ሁኔታ ለማየት
 app.get('/webhook-info', async (req, res) => {
     try {
         const info = await bot.bot.telegram.getWebhookInfo();
-        res.json({ success: true, webhook: info });
+        res.json({
+            success: true,
+            webhook: info
+        });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 });
 
+// Webhook ለማዘጋጀት
 app.get('/set-webhook', async (req, res) => {
     try {
         const webhookUrl = process.env.WEBHOOK_URL || 
-            (process.env.RENDER_EXTERNAL_HOSTNAME ? 
-                `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook` : 
-                `http://localhost:${port}/webhook`);
+            `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/webhook`;
+        
+        // ቀድሞ የነበረውን Webhook ያጥፉ
+        await bot.bot.telegram.deleteWebhook();
+        
+        // አዲስ Webhook ያዘጋጁ
         const result = await bot.bot.telegram.setWebhook(webhookUrl);
-        res.json({ success: true, message: 'Webhook set', url: webhookUrl, result });
+        
+        res.json({
+            success: true,
+            message: 'Webhook set successfully',
+            url: webhookUrl,
+            result: result
+        });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 });
 
+// Webhook ለማጥፋት
 app.get('/delete-webhook', async (req, res) => {
     try {
         const result = await bot.bot.telegram.deleteWebhook();
-        res.json({ success: true, message: 'Webhook deleted', result });
+        res.json({
+            success: true,
+            message: 'Webhook deleted successfully',
+            result: result
+        });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 });
 
 // ============================================================
-// START BOT
+// START BOT (Webhook ሞድ)
 // ============================================================
 async function startBot() {
     try {
-        // ቦቱን ያስነሱ
-        console.log('🔄 Starting bot...');
-        await bot.start();
+        console.log('🔄 Connecting to database...');
+        await db.connect();
         
-        // Webhook ማዘጋጀት (Render ላይ)
-        const useWebhook = process.env.USE_WEBHOOK === 'true' || process.env.RENDER_EXTERNAL_HOSTNAME;
+        const services = await db.getAllServices();
+        console.log(`📊 Database connected! Found ${services.length} services`);
         
-        if (useWebhook) {
-            const webhookUrl = process.env.WEBHOOK_URL || 
-                `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook`;
-            console.log(`🔗 Setting webhook to: ${webhookUrl}`);
-            
-            try {
-                await bot.bot.telegram.deleteWebhook();
-                await bot.bot.telegram.setWebhook(webhookUrl);
-                console.log('✅ Webhook set successfully!');
-            } catch (webhookError) {
-                console.error('❌ Webhook error:', webhookError.message);
-            }
-        } else {
-            console.log('🔄 Using long polling mode');
+        // ============================================================
+        // ✅ ቦቱን በWebhook ሞድ ያስነሱ
+        // ============================================================
+        console.log('🔄 Starting bot in webhook mode...');
+        
+        // ቦቱን ለWebhook ዝግጁ ያድርጉ
+        await bot.bot.launch();
+        console.log('✅ Bot launched for webhook mode');
+        
+        // ============================================================
+        // ✅ Webhook ያዘጋጁ
+        // ============================================================
+        const webhookUrl = process.env.WEBHOOK_URL || 
+            `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook`;
+        
+        console.log(`🔗 Setting webhook to: ${webhookUrl}`);
+        
+        try {
+            // ቀድሞ የነበረውን Webhook ያጥፉ
             await bot.bot.telegram.deleteWebhook();
+            
+            // አዲስ Webhook ያዘጋጁ
+            const result = await bot.bot.telegram.setWebhook(webhookUrl);
+            console.log('✅ Webhook set successfully!');
+            console.log('📊 Webhook info:', result);
+        } catch (webhookError) {
+            console.error('❌ Failed to set webhook:', webhookError.message);
+            console.log('💡 Please set webhook manually:');
+            console.log(`curl -X POST "https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/setWebhook" -H "Content-Type: application/json" -d '{"url": "${webhookUrl}"}'`);
         }
         
         console.log('🚀 ====================================');
         console.log('🚀 LUCIA PRINTING BOT IS LIVE!');
+        console.log('🚀 Mode: Webhook');
         console.log('🚀 ====================================');
-        console.log(`📡 Health: http://localhost:${port}/health`);
+        console.log(`📡 Health check: http://localhost:${port}/health`);
+        console.log(`📡 Webhook URL: ${webhookUrl}`);
         console.log(`📡 Webhook info: http://localhost:${port}/webhook-info`);
-        console.log('🤖 Bot is ready!');
+        console.log('🤖 Bot is ready to receive messages via Webhook!');
+        
+        // Webhook ሁኔታ አሳይ
+        try {
+            const info = await bot.bot.telegram.getWebhookInfo();
+            console.log('📊 Webhook status:', info.url || 'Not set');
+            console.log('📊 Pending updates:', info.pending_update_count || 0);
+        } catch (e) {
+            // ignore
+        }
         
     } catch (error) {
         console.error('❌ Failed to start bot:', error);
@@ -186,13 +227,19 @@ startBot().catch(err => {
 // GRACEFUL SHUTDOWN
 // ============================================================
 process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received');
-    server.close(() => process.exit(0));
+    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+    });
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 SIGINT received');
-    server.close(() => process.exit(0));
+    console.log('🛑 SIGINT received, shutting down gracefully...');
+    server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+    });
 });
 
 process.on('uncaughtException', (error) => {
