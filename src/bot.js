@@ -14,7 +14,6 @@ class LuciaBot {
     this.aiClient = aiClient;
     this.userConversations = new Map();
     this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint';
-    this.isRunning = false;
   }
 
   getConversationHistory(userId) {
@@ -39,12 +38,26 @@ class LuciaBot {
     try {
       const user = ctx.from;
       const chatId = this.HUMAN_AGENT_CHAT_ID;
-      const message = `📁 NEW FILE\nCustomer: ${user.first_name}\nFile: ${fileInfo.file_name || 'photo'}\nMessage: ${caption || 'No message'}`;
+      
+      // 📝 ወደ HTML የተቀየረ መልዕክት (የማርክዳውን ስህተትን ሙሉ በሙሉ ለመከላከል)
+      const message = `<b>📁 አዲስ ፋይል ከደንበኛ</b>\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                      `👤 <b>ደንበኛ:</b> ${user.first_name} ${user.last_name || ''}\n` +
+                      `🆔 <b>ID:</b> <code>${user.id}</code>\n` +
+                      `📄 <b>ፋይል:</b> ${fileInfo.file_name || 'ፎቶ/ምስል'}\n` +
+                      `📝 <b>መልዕክት:</b> ${caption || 'ምንም ተጨማሪ መልዕክት የለም'}\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━`;
       
       if (fileInfo.type === 'photo') {
-        await ctx.telegram.sendPhoto(chatId, fileInfo.file_id, { caption: message.substring(0, 1024) });
+        await ctx.telegram.sendPhoto(chatId, fileInfo.file_id, { 
+          caption: message.substring(0, 1024), 
+          parse_mode: 'HTML' 
+        });
       } else {
-        await ctx.telegram.sendDocument(chatId, fileInfo.file_id, { caption: message.substring(0, 1024) });
+        await ctx.telegram.sendDocument(chatId, fileInfo.file_id, { 
+          caption: message.substring(0, 1024), 
+          parse_mode: 'HTML' 
+        });
       }
       return true;
     } catch (error) {
@@ -53,6 +66,7 @@ class LuciaBot {
     }
   }
 
+  // ==================== MAIN MENU KEYBOARD ====================
   mainMenuKeyboard() {
     return Markup.inlineKeyboard([
       [
@@ -74,31 +88,20 @@ class LuciaBot {
   }
 
   async start() {
-    if (this.isRunning) {
-      console.log('⚠️ Bot is already running!');
-      return;
-    }
-
-    console.log('🔄 Connecting to database...');
     await db.connect();
 
     // ==================== /start ====================
     this.bot.start(async (ctx) => {
-      const message = `🌟 **እንኳን ደህና መጡ ወደ ሉቺያ ህትመት!** 🌟
+      // ወደ HTML ፎርማት ተቀይሯል
+      const message = `🌟 <b>እንኳን ደህና መጡ ወደ ሉቺያ ህትመት!</b> 🌟\n\n` +
+                      `Welcome to Lucia Printing!\n\n` +
+                      `💬 <b>ማንኛውንም ጥያቄ በጽሁፍ መጠየቅ ይችላሉ!</b>\n` +
+                      `እኔ AI ረዳት ነኝ ስለ ሉቺያ ህትመት መረጃ እሰጥዎታለሁ።\n\n` +
+                      `📋 <b>ለፈጣን አገልግሎት ከታች ያሉትን ቁልፎች መጫን ይችላሉ!</b>\n\n` +
+                      `💬 You can ask ANY question in text!\n` +
+                      `📋 You can also use the buttons below for quick access!`;
 
-Welcome to Lucia Printing!
-
-💬 **ማንኛውንም ጥያቄ በጽሁፍ መጠየቅ ይችላሉ!** 
-እኔ AI ረዳት ነኝ እና ስለ ሉቺያ ህትመት ሁሉንም ነገር አውቃለሁ።
-
-📋 **ለፈጣን አገልግሎት ከታች ያሉትን ቁልፎች መጫን ይችላሉ!**
-
-💬 You can ask ANY question in text!
-I'm an AI assistant and I know everything about Lucia Printing.
-
-📋 You can also use the buttons below for quick access!`;
-
-      await ctx.reply(message, this.mainMenuKeyboard());
+      await ctx.reply(message, { parse_mode: 'HTML', ...this.mainMenuKeyboard() });
     });
 
     // ==================== BUTTON HANDLERS ====================
@@ -110,18 +113,18 @@ I'm an AI assistant and I know everything about Lucia Printing.
         return ctx.reply('📭 ምንም አገልግሎቶች አልተገኙም።');
       }
       
-      let message = '📋 **ሁሉም አገልግሎቶች**\n━━━━━━━━━━━━━━━━━━━━━\n\n';
+      let message = '📋 <b>ሁሉም አገልግሎቶች</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n';
       const buttons = [];
       
       services.forEach(s => {
-        message += `📌 **${s.title}**`;
+        message += `📌 <b>${s.title}</b>`;
         if (s.price_range) message += ` - ${s.price_range}`;
         message += `\n📝 ${s.short_description || ''}\n\n`;
         buttons.push([Markup.button.callback(`📖 ${s.title}`, `service_${s.slug}`)]);
       });
       
       buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+      await ctx.reply(message, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
     });
 
     this.bot.action('featured_services', async (ctx) => {
@@ -131,16 +134,16 @@ I'm an AI assistant and I know everything about Lucia Printing.
         return ctx.reply('📭 ተለይተው የቀረቡ አገልግሎቶች የሉም።');
       }
       
-      let message = '⭐ **ተለይተው የቀረቡ**\n━━━━━━━━━━━━━━━━━━━━━\n\n';
+      let message = '⭐ <b>ተለይተው የቀረቡ</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n';
       const buttons = [];
       services.forEach(s => {
-        message += `🏆 **${s.title}**`;
+        message += `🏆 <b>${s.title}</b>`;
         if (s.price_range) message += ` - ${s.price_range}`;
         message += `\n📝 ${s.short_description || ''}\n\n`;
         buttons.push([Markup.button.callback(`📖 ${s.title}`, `service_${s.slug}`)]);
       });
       buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+      await ctx.reply(message, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
     });
 
     this.bot.action('categories', async (ctx) => {
@@ -150,14 +153,14 @@ I'm an AI assistant and I know everything about Lucia Printing.
         return ctx.reply('📭 ምንም ምድቦች አልተገኙም።');
       }
       
-      let message = '📂 **ምድቦች**\n━━━━━━━━━━━━━━━━━━━━━\n\n';
+      let message = '📂 <b>ምድቦች</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n';
       const buttons = [];
       categories.forEach(c => {
-        message += `📁 **${c.name}**\n📝 ${c.description || ''}\n\n`;
+        message += `📁 <b>${c.name}</b>\n📝 ${c.description || ''}\n\n`;
         buttons.push([Markup.button.callback(`📂 ${c.name}`, `category_${c.slug}`)]);
       });
       buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+      await ctx.reply(message, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
     });
 
     this.bot.action(/category_(.+)/, async (ctx) => {
@@ -172,17 +175,17 @@ I'm an AI assistant and I know everything about Lucia Printing.
         return ctx.reply(`📭 በ"${category.name}" ምድብ ውስጥ ምንም አገልግሎቶች የሉም።`);
       }
       
-      let message = `📂 **${category.name}**\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      let message = `📂 <b>${category.name}</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
       const buttons = [];
       services.forEach(s => {
-        message += `📌 **${s.title}**`;
+        message += `📌 <b>${s.title}</b>`;
         if (s.price_range) message += ` - ${s.price_range}`;
         message += `\n📝 ${s.short_description || ''}\n\n`;
         buttons.push([Markup.button.callback(`📖 ${s.title}`, `service_${s.slug}`)]);
       });
       buttons.push([Markup.button.callback('🔙 ወደ ምድቦች', 'categories')]);
       buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
-      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+      await ctx.reply(message, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
     });
 
     this.bot.action(/service_(.+)/, async (ctx) => {
@@ -191,23 +194,25 @@ I'm an AI assistant and I know everything about Lucia Printing.
       const service = await db.getServiceBySlug(slug);
       if (!service) return ctx.reply(`❌ አገልግሎቱ "${slug}" አልተገኘም።`);
       
-      let message = `🔍 **${service.title}**\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      let message = `🔍 <b>${service.title}</b>\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
       if (service.short_description) message += `📝 ${service.short_description}\n\n`;
       if (service.full_description) {
         message += `📋 ${service.full_description.substring(0, 500)}`;
         if (service.full_description.length > 500) message += `...`;
         message += '\n\n';
       }
-      if (service.price_range) message += `💰 **ዋጋ:** ${service.price_range}\n`;
-      if (service.min_order) message += `📦 **ዝቅተኛ ትዕዛዝ:** ${service.min_order}\n`;
-      if (service.turnaround) message += `⏱️ **ጊዜ:** ${service.turnaround}\n`;
-      if (service.badge) message += `🏷️ **${service.badge}**\n`;
-      if (service.features?.length > 0) {
-        message += `\n✨ **ባህሪያት:**\n`;
+      if (service.price_range) message += `💰 <b>ዋጋ:</b> ${service.price_range}\n`;
+      if (service.min_order) message += `📦 <b>ዝቅተኛ ትዕዛዝ:</b> ${service.min_order}\n`;
+      if (service.turnaround) message += `⏱️ <b>ጊዜ:</b> ${service.turnaround}\n`;
+      if (service.badge) message += `🏷️ <b>${service.badge}</b>\n`;
+      
+      // አስተማማኝ ድርድር (Array) ፍተሻ
+      if (service.features && Array.isArray(service.features) && service.features.length > 0) {
+        message += `\n✨ <b>ባህሪያት:</b>\n`;
         service.features.forEach(f => message += `• ${f}\n`);
       }
-      if (service.materials?.length > 0) {
-        message += `\n📦 **ቁሳቁሶች:**\n${service.materials.join(', ')}`;
+      if (service.materials && Array.isArray(service.materials) && service.materials.length > 0) {
+        message += `\n📦 <b>ቁሳቁሶች:</b>\n${service.materials.join(', ')}`;
       }
       message += `\n\n💡 ማንኛውም ጥያቄ ካለ በጽሁፍ መጠየቅ ይችላሉ!`;
       
@@ -216,72 +221,38 @@ I'm an AI assistant and I know everything about Lucia Printing.
         [Markup.button.callback('🛒 ማዘዝ', `order_${service.slug}`), Markup.button.callback('🔙 ወደ አገልግሎቶች', 'all_services')],
         [Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]
       ]);
-      await ctx.reply(message, keyboard);
+      await ctx.reply(message, { parse_mode: 'HTML', ...keyboard });
     });
 
     this.bot.action(/order_(.+)/, async (ctx) => {
       const slug = ctx.match[1];
       await ctx.answerCbQuery();
       const service = await db.getServiceBySlug(slug);
-      await ctx.reply(`🛒 **ማዘዝ - ${service ? service.title : slug}**
-
-እባክዎ ይላኩልኝ፦
-1️⃣ ሙሉ ስም
-2️⃣ ስልክ ቁጥር
-3️⃣ ብዛት
-
-ከዚያ ለሰው አገልግሎት እናስተላልፋለን።
-
-Please send:
-1️⃣ Full Name
-2️⃣ Phone Number
-3️⃣ Quantity
-
-We will connect you with a human agent.`);
+      await ctx.reply(`🛒 <b>ማዘዝ - ${service ? service.title : slug}</b>\n\n` +
+                      `እባክዎ ይላኩልኝ፦\n1️⃣ ሙሉ ስም\n2️⃣ ስልክ ቁጥር\n3️⃣ ብዛት\n\nከዚያ ለሰው አገልግሎት እናስተላልፋለን።\n\n` +
+                      `Please send:\n1️⃣ Full Name\n2️⃣ Phone Number\n3️⃣ Quantity\n\nWe will connect you with a human agent.`, { parse_mode: 'HTML' });
     });
 
     this.bot.action('upload_file', async (ctx) => {
       await ctx.answerCbQuery();
-      await ctx.reply(`📤 **ፋይል መላክ**
-
-እባክዎ ፋይልዎን (PDF, AI, PSD, JPG, PNG, CDR) ይላኩልኝ።
-ፋይልዎ ለሰው አገልግሎት ይላካል።
-
-Please send your file (PDF, AI, PSD, JPG, PNG, CDR).
-Your file will be forwarded to our human agent.`);
+      await ctx.reply(`📤 <b>ፋይል መላክ</b>\n\n` +
+                      `እባክዎ ፋይልዎን (PDF, AI, PSD, JPG, PNG, CDR) ይላኩልኝ።\nፋይልዎ ለሰው አገልግሎት ይላካል።\n\n` +
+                      `Please send your file (PDF, AI, PSD, JPG, PNG, CDR).`, { parse_mode: 'HTML' });
     });
 
     this.bot.action('place_order', async (ctx) => {
       await ctx.answerCbQuery();
-      await ctx.reply(`🛒 **ማዘዝ**
-
-እባክዎ ይላኩልኝ፦
-1️⃣ ሙሉ ስም
-2️⃣ ስልክ ቁጥር
-3️⃣ አገልግሎት
-4️⃣ ብዛት
-
-Please send:
-1️⃣ Full Name
-2️⃣ Phone Number
-3️⃣ Service
-4️⃣ Quantity`);
+      await ctx.reply(`🛒 <b>ማዘዝ</b>\n\nእባክዎ ይላኩልኝ፦\n1️⃣ ሙሉ ስም\n2️⃣ ስልክ ቁጥር\n3️⃣ አገልግሎት\n4️⃣ ብዛት`, { parse_mode: 'HTML' });
     });
 
     this.bot.action('call_us', async (ctx) => {
       await ctx.answerCbQuery();
-      await ctx.reply(`📞 **ደውሉልን / Call Us**
-
-📱 +251-939-604444 | +251-965-191953
-⏰ ሰኞ-ቅዳሜ 2:00 AM - 12:30 AM
-📧 luciaprintingandadvertising@gmail.com
-🌐 https://luciaprinting.et
-💬 @Luciaprint`);
+      await ctx.reply(`📞 <b>ደውሉልን / Call Us</b>\n\n📱 +251-911-234567 | +251-912-345678\n⏰ ሰኞ-ቅዳሜ 8:30-6:30\n📧 info@luciaprinting.et\n🌐 https://luciaprinting.et\n💬 @Luciaprint`, { parse_mode: 'HTML' });
     });
 
     this.bot.action('back_to_main', async (ctx) => {
       await ctx.answerCbQuery();
-      await ctx.reply('🔙 **ወደ መጀመሪያ**\n\nBack to main menu', this.mainMenuKeyboard());
+      await ctx.reply('🔙 <b>ወደ መጀመሪያ</b>\n\nBack to main menu', { parse_mode: 'HTML', ...this.mainMenuKeyboard() });
     });
 
     // ==================== COMMANDS ====================
@@ -310,7 +281,7 @@ Please send:
       }
     });
 
-    // ==================== TEXT MESSAGES ====================
+    // ==================== TEXT MESSAGES - ALL GO TO AI ====================
     this.bot.on('text', async (ctx) => {
       try {
         const userId = ctx.from.id;
@@ -342,17 +313,8 @@ Please send:
 
     this.bot.catch((err) => console.error('Bot error:', err));
     
-    // ============================================================
-    // ✅ ሁልጊዜ ቦቱን ያስነሱ
-    // ============================================================
-    try {
-      await this.bot.launch();
-      this.isRunning = true;
-      console.log('✅ Bot launched successfully!');
-    } catch (error) {
-      console.error('❌ Failed to launch bot:', error.message);
-      throw error;
-    }
+    await this.bot.launch();
+    console.log('🤖 Bot is running with Gemini AI!');
     
     process.once('SIGINT', () => this.bot.stop('SIGINT'));
     process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
