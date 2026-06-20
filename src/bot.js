@@ -14,7 +14,7 @@ class LuciaBot {
     this.aiClient = aiClient;
     this.userConversations = new Map();
     this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint';
-    this.isRunning = false; // ቦቱ አንድ ጊዜ ብቻ እንዲሰራ
+    this.isRunning = false;
   }
 
   getConversationHistory(userId) {
@@ -53,7 +53,6 @@ class LuciaBot {
     }
   }
 
-  // ==================== MAIN MENU KEYBOARD ====================
   mainMenuKeyboard() {
     return Markup.inlineKeyboard([
       [
@@ -74,14 +73,13 @@ class LuciaBot {
     ]);
   }
 
-  // ==================== START BOT ====================
   async start() {
-    // ቦቱ ቀድሞ ከተጀመረ አይጀምር
     if (this.isRunning) {
       console.log('⚠️ Bot is already running!');
       return;
     }
 
+    console.log('🔄 Connecting to database...');
     await db.connect();
 
     // ==================== /start ====================
@@ -274,9 +272,9 @@ Please send:
       await ctx.answerCbQuery();
       await ctx.reply(`📞 **ደውሉልን / Call Us**
 
-📱 +251-911-234567 | +251-912-345678
-⏰ ሰኞ-ቅዳሜ 8:30-6:30
-📧 info@luciaprinting.et
+📱 +251-939-604444 | +251-965-191953
+⏰ ሰኞ-ቅዳሜ 2:00 AM - 12:30 AM
+📧 luciaprintingandadvertising@gmail.com
 🌐 https://luciaprinting.et
 💬 @Luciaprint`);
     });
@@ -312,7 +310,7 @@ Please send:
       }
     });
 
-    // ==================== TEXT MESSAGES - ALL GO TO AI ====================
+    // ==================== TEXT MESSAGES ====================
     this.bot.on('text', async (ctx) => {
       try {
         const userId = ctx.from.id;
@@ -345,19 +343,12 @@ Please send:
     this.bot.catch((err) => console.error('Bot error:', err));
     
     // ============================================================
-    // ⚠️ ቦቱን አንድ ጊዜ ብቻ ያስነሱ!
+    // ✅ ሁልጊዜ ቦቱን ያስነሱ
     // ============================================================
     try {
-      // Webhook ወይም Polling ለመወሰን
-      if (process.env.WEBHOOK_URL) {
-        console.log('🤖 Bot configured for webhook mode (started by index.js)');
-        // Webhook ሞድ - index.js ያስነሳል
-      } else {
-        // Long Polling ሞድ
-        await this.bot.launch();
-        this.isRunning = true;
-        console.log('🤖 Bot running in polling mode');
-      }
+      await this.bot.launch();
+      this.isRunning = true;
+      console.log('✅ Bot launched successfully!');
     } catch (error) {
       console.error('❌ Failed to launch bot:', error.message);
       throw error;
