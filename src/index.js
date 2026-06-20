@@ -47,6 +47,15 @@ server.listen(PORT, () => {
   console.log(`🌐 Health check server listening on port ${PORT}`);
 });
 
+// በየ 10 ደቂቃው (600,000 ሚሊሰከንድ) ራሱን የሚቀሰቅስ ሎጂክ
+setInterval(() => {
+  // ⚠️ የእራስህን የRender URL እዚህ ተካው
+  https.get('https://lucia-ai-bot.onrender.com', (res) => {
+    console.log('🔄 Self-ping sent to keep bot awake! Status:', res.statusCode);
+  }).on('error', (err) => {
+    console.error('❌ Self-ping error:', err.message);
+  });
+}, 10 * 60 * 1000);
 // Start the bot
 const bot = new LuciaBot(process.env.TELEGRAM_BOT_TOKEN, aiClient);
 bot.start()
