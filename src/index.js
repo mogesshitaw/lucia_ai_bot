@@ -13,7 +13,6 @@ const port = process.env.PORT || 8080;
 
 app.use(express.json());
 
-// Health check endpoints
 app.get('/', (req, res) => {
     res.json({
         status: 'online',
@@ -78,7 +77,7 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 const bot = new LuciaBot(process.env.TELEGRAM_BOT_TOKEN, aiClient);
 
 // ============================================================
-// WEBHOOK ENDPOINT - ቴሌግራም መልዕክቶች የሚደርሱበት
+// WEBHOOK ENDPOINTS
 // ============================================================
 app.post('/webhook', async (req, res) => {
     try {
@@ -91,67 +90,38 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Webhook ሁኔታ ለማየት
 app.get('/webhook-info', async (req, res) => {
     try {
         const info = await bot.bot.telegram.getWebhookInfo();
-        res.json({
-            success: true,
-            webhook: info
-        });
+        res.json({ success: true, webhook: info });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Webhook ለማዘጋጀት
 app.get('/set-webhook', async (req, res) => {
     try {
         const webhookUrl = process.env.WEBHOOK_URL || 
             `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/webhook`;
-        
-        // ቀድሞ የነበረውን Webhook ያጥፉ
         await bot.bot.telegram.deleteWebhook();
-        
-        // አዲስ Webhook ያዘጋጁ
         const result = await bot.bot.telegram.setWebhook(webhookUrl);
-        
-        res.json({
-            success: true,
-            message: 'Webhook set successfully',
-            url: webhookUrl,
-            result: result
-        });
+        res.json({ success: true, message: 'Webhook set', url: webhookUrl, result });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Webhook ለማጥፋት
 app.get('/delete-webhook', async (req, res) => {
     try {
         const result = await bot.bot.telegram.deleteWebhook();
-        res.json({
-            success: true,
-            message: 'Webhook deleted successfully',
-            result: result
-        });
+        res.json({ success: true, message: 'Webhook deleted', result });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
 // ============================================================
-// START BOT (Webhook ሞድ)
+// START BOT
 // ============================================================
 async function startBot() {
     try {
@@ -162,33 +132,28 @@ async function startBot() {
         console.log(`📊 Database connected! Found ${services.length} services`);
         
         // ============================================================
-        // ✅ ቦቱን በWebhook ሞድ ያስነሱ
+        // ✅ ትክክለኛው ዘዴ: ሁሉንም አያያዝ ያስመዝግቡ
         // ============================================================
         console.log('🔄 Starting bot in webhook mode...');
         
-        // ቦቱን ለWebhook ዝግጁ ያድርጉ
-        await bot.bot.launch();
-        console.log('✅ Bot launched for webhook mode');
+        // ✅ ይህ ሁሉንም አያያዝ (handlers) ያስመዝግባል
+        await bot.startWebhook();  // ወይም bot.start() መጠቀም ይችላሉ
         
         // ============================================================
         // ✅ Webhook ያዘጋጁ
         // ============================================================
         const webhookUrl = process.env.WEBHOOK_URL || 
-            `https://${process.env.RENDER_EXTERNAL_HOSTNAME}/webhook`;
+            `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/webhook`;
         
         console.log(`🔗 Setting webhook to: ${webhookUrl}`);
         
         try {
-            // ቀድሞ የነበረውን Webhook ያጥፉ
             await bot.bot.telegram.deleteWebhook();
-            
-            // አዲስ Webhook ያዘጋጁ
-            const result = await bot.bot.telegram.setWebhook(webhookUrl);
+            await bot.bot.telegram.setWebhook(webhookUrl);
             console.log('✅ Webhook set successfully!');
-            console.log('📊 Webhook info:', result);
         } catch (webhookError) {
-            console.error('❌ Failed to set webhook:', webhookError.message);
-            console.log('💡 Please set webhook manually:');
+            console.error('❌ Webhook error:', webhookError.message);
+            console.log('💡 Set webhook manually:');
             console.log(`curl -X POST "https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/setWebhook" -H "Content-Type: application/json" -d '{"url": "${webhookUrl}"}'`);
         }
         
@@ -196,19 +161,9 @@ async function startBot() {
         console.log('🚀 LUCIA PRINTING BOT IS LIVE!');
         console.log('🚀 Mode: Webhook');
         console.log('🚀 ====================================');
-        console.log(`📡 Health check: http://localhost:${port}/health`);
-        console.log(`📡 Webhook URL: ${webhookUrl}`);
-        console.log(`📡 Webhook info: http://localhost:${port}/webhook-info`);
-        console.log('🤖 Bot is ready to receive messages via Webhook!');
-        
-        // Webhook ሁኔታ አሳይ
-        try {
-            const info = await bot.bot.telegram.getWebhookInfo();
-            console.log('📊 Webhook status:', info.url || 'Not set');
-            console.log('📊 Pending updates:', info.pending_update_count || 0);
-        } catch (e) {
-            // ignore
-        }
+        console.log(`📡 Health: http://localhost:${port}/health`);
+        console.log(`📡 Webhook: ${webhookUrl}`);
+        console.log('🤖 Bot is ready!');
         
     } catch (error) {
         console.error('❌ Failed to start bot:', error);
@@ -227,19 +182,13 @@ startBot().catch(err => {
 // GRACEFUL SHUTDOWN
 // ============================================================
 process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully...');
-    server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-    });
+    console.log('🛑 SIGTERM received');
+    server.close(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 SIGINT received, shutting down gracefully...');
-    server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-    });
+    console.log('🛑 SIGINT received');
+    server.close(() => process.exit(0));
 });
 
 process.on('uncaughtException', (error) => {
