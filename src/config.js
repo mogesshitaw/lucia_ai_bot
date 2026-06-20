@@ -1,18 +1,46 @@
-const dotenv = require('dotenv');
-dotenv.config();
+const fs = require('fs');
+const path = require('path');
 
-module.exports = {
-  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
-  geminiApiKey: process.env.GEMINI_API_KEY,
-  
-  // Validate required variables
-  validate: () => {
-    if (!module.exports.telegramBotToken) {
-      throw new Error('❌ TELEGRAM_BOT_TOKEN is missing in .env file');
-    }
-    if (!module.exports.geminiApiKey) {
-      throw new Error('❌ GEMINI_API_KEY is missing in .env file');
-    }
-    console.log('✅ Configuration loaded successfully');
+const ORDERS_DIR = path.join(__dirname, '..', 'orders');
+
+// Ensure orders directory exists
+if (!fs.existsSync(ORDERS_DIR)) {
+  fs.mkdirSync(ORDERS_DIR);
+}
+
+class OrderStorage {
+  static saveOrder(userId, username, customerName, phoneNumber, conversationSummary) {
+    const orderData = {
+      orderId: `ORD-${Date.now()}-${userId}`,
+      timestamp: new Date().toISOString(),
+      userId: userId,
+      username: username || 'unknown',
+      customerName: customerName,
+      phoneNumber: phoneNumber,
+      conversationSummary: conversationSummary,
+      status: 'pending'
+    };
+
+    const filename = `${orderData.orderId}.json`;
+    const filepath = path.join(ORDERS_DIR, filename);
+    
+    fs.writeFileSync(filepath, JSON.stringify(orderData, null, 2));
+    
+    console.log(`✅ Order saved: ${filename}`);
+    return orderData.orderId;
   }
-};
+
+  static getRecentOrders(limit = 10) {
+    const files = fs.readdirSync(ORDERS_DIR);
+    const orders = [];
+    
+    for (const file of files.slice(-limit)) {
+      const content = fs.readFileSync(path.join(ORDERS_DIR, file), 'utf8');
+      orders.push(JSON.parse(content));
+    }
+    
+    return orders.reverse();
+  }
+}
+
+module.exports = OrderStorage;

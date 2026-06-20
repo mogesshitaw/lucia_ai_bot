@@ -13,8 +13,7 @@ class LuciaBot {
     this.bot = new Telegraf(token);
     this.aiClient = aiClient;
     this.userConversations = new Map();
-    // 💡 ማሳሰቢያ፡ እዚህ ላይ የቁጥር ID (ለምሳሌ 54321678) በ .env ብታስገባ ይመረጣል
-    this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint'; 
+    this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint';
   }
 
   getConversationHistory(userId) {
@@ -60,12 +59,13 @@ class LuciaBot {
         Markup.button.callback('📋 ሁሉም አገልግሎቶች', 'all_services'),
         Markup.button.callback('⭐ ተለይተው የቀረቡ', 'featured_services')
       ],
-      [ 
-        Markup.button.callback('🛒 ማዘዝ', 'place_order'),
+      [
+        Markup.button.callback('📂 ምድቦች', 'categories'),
         Markup.button.callback('📞 ደውሉልን', 'call_us')
       ],
       [
         Markup.button.callback('📤 ፋይል ላክ', 'upload_file'),
+        Markup.button.callback('🛒 ማዘዝ', 'place_order')
       ],
       [
         Markup.button.url('🌐 ድረ-ገጻችን', 'https://luciaprinting.et')
@@ -73,9 +73,8 @@ class LuciaBot {
     ]);
   }
 
-  // ✅ ማስተካከያ፡ ይህንን ፋንክሽን በ index.js ላይ ስለምንጠራው፣ እዚህ ውስጥ የቦቱን ህግጋት (Listeners) ብቻ ነው የምናዘጋጀው
   async start() {
-    // db.connect() በ index.js ላይ ስለሚሰራ እዚህ ላይ አያስፈልግም፣ ግን ቢኖርም ችግር የለውም
+    await db.connect();
 
     // ==================== /start ====================
     this.bot.start(async (ctx) => {
@@ -83,7 +82,8 @@ class LuciaBot {
 
 Welcome to Lucia Printing!
 
-💬 **ማንኛውንም ጥያቄ በጽሁፍ መጠየቅ ይችላሉ!** እኔ AI ረዳት ነኝ እና ስለ ሉቺያ ህትመት ሁሉንም ነገር አውቃለሁ።
+💬 **ማንኛውንም ጥያቄ በጽሁፍ መጠየቅ ይችላሉ!** 
+እኔ AI ረዳት ነኝ እና ስለ ሉቺያ ህትመት ሁሉንም ነገር አውቃለሁ።
 
 📋 **ለፈጣን አገልግሎት ከታች ያሉትን ቁልፎች መጫን ይችላሉ!**
 
@@ -133,6 +133,48 @@ I'm an AI assistant and I know everything about Lucia Printing.
         message += `\n📝 ${s.short_description || ''}\n\n`;
         buttons.push([Markup.button.callback(`📖 ${s.title}`, `service_${s.slug}`)]);
       });
+      buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
+      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+    });
+
+    this.bot.action('categories', async (ctx) => {
+      await ctx.answerCbQuery();
+      const categories = await db.getAllCategories();
+      if (!categories || categories.length === 0) {
+        return ctx.reply('📭 ምንም ምድቦች አልተገኙም።');
+      }
+      
+      let message = '📂 **ምድቦች**\n━━━━━━━━━━━━━━━━━━━━━\n\n';
+      const buttons = [];
+      categories.forEach(c => {
+        message += `📁 **${c.name}**\n📝 ${c.description || ''}\n\n`;
+        buttons.push([Markup.button.callback(`📂 ${c.name}`, `category_${c.slug}`)]);
+      });
+      buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
+      await ctx.reply(message, Markup.inlineKeyboard(buttons));
+    });
+
+    this.bot.action(/category_(.+)/, async (ctx) => {
+      const slug = ctx.match[1];
+      await ctx.answerCbQuery();
+      const categories = await db.getAllCategories();
+      const category = categories.find(c => c.slug === slug);
+      if (!category) return ctx.reply('❌ ምድቡ አልተገኘም።');
+      
+      const services = await db.getServicesByCategory(category.name);
+      if (!services || services.length === 0) {
+        return ctx.reply(`📭 በ"${category.name}" ምድብ ውስጥ ምንም አገልግሎቶች የሉም።`);
+      }
+      
+      let message = `📂 **${category.name}**\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      const buttons = [];
+      services.forEach(s => {
+        message += `📌 **${s.title}**`;
+        if (s.price_range) message += ` - ${s.price_range}`;
+        message += `\n📝 ${s.short_description || ''}\n\n`;
+        buttons.push([Markup.button.callback(`📖 ${s.title}`, `service_${s.slug}`)]);
+      });
+      buttons.push([Markup.button.callback('🔙 ወደ ምድቦች', 'categories')]);
       buttons.push([Markup.button.callback('🔙 ወደ መጀመሪያ', 'back_to_main')]);
       await ctx.reply(message, Markup.inlineKeyboard(buttons));
     });
@@ -224,9 +266,9 @@ Please send:
       await ctx.answerCbQuery();
       await ctx.reply(`📞 **ደውሉልን / Call Us**
 
-📱 +251-939-604444 | +251-965-191953
-⏰ ሰኞ-ቅዳሜ 2:00-12:30
-📧 luciaprintingandadvertising@gmail.com
+📱 +251-911-234567 | +251-912-345678
+⏰ ሰኞ-ቅዳሜ 8:30-6:30
+📧 info@luciaprinting.et
 🌐 https://luciaprinting.et
 💬 @Luciaprint`);
     });
@@ -277,6 +319,7 @@ Please send:
         
         let replyText = response.message || '⚠️ ይቅርታ መልስ ማግኘት አልቻለም።';
         
+        // Add quick action buttons after AI response
         const keyboard = Markup.inlineKeyboard([
           [Markup.button.callback('📋 ሁሉም አገልግሎቶች', 'all_services')],
           [Markup.button.callback('🛒 ማዘዝ', 'place_order'), Markup.button.callback('📞 ደውሉልን', 'call_us')],
@@ -294,8 +337,15 @@ Please send:
 
     this.bot.catch((err) => console.error('Bot error:', err));
     
-    // ❌ ማስተካከያ ፡ ከዚህ ቦታ ላይ this.bot.launch() እና process.once መስመሮችን አጥፍተናቸዋል።
-    console.log('🤖 LuciaBot Event Listeners Registered Successfully.');
+   if (!process.env.WEBHOOK_URL) {
+    await this.bot.launch();
+    console.log('🤖 Bot running in polling mode');
+} else {
+    console.log('🤖 Bot running in webhook mode');
+}
+    
+    process.once('SIGINT', () => this.bot.stop('SIGINT'));
+    process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
   }
 }
 
