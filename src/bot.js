@@ -14,6 +14,7 @@ class LuciaBot {
     this.aiClient = aiClient;
     this.userConversations = new Map();
     this.HUMAN_AGENT_CHAT_ID = process.env.HUMAN_AGENT_CHAT_ID || '@Luciaprint';
+    this.isRunning = false; // ቦቱ አንድ ጊዜ ብቻ እንዲሰራ
   }
 
   getConversationHistory(userId) {
@@ -73,7 +74,14 @@ class LuciaBot {
     ]);
   }
 
+  // ==================== START BOT ====================
   async start() {
+    // ቦቱ ቀድሞ ከተጀመረ አይጀምር
+    if (this.isRunning) {
+      console.log('⚠️ Bot is already running!');
+      return;
+    }
+
     await db.connect();
 
     // ==================== /start ====================
@@ -319,7 +327,6 @@ Please send:
         
         let replyText = response.message || '⚠️ ይቅርታ መልስ ማግኘት አልቻለም።';
         
-        // Add quick action buttons after AI response
         const keyboard = Markup.inlineKeyboard([
           [Markup.button.callback('📋 ሁሉም አገልግሎቶች', 'all_services')],
           [Markup.button.callback('🛒 ማዘዝ', 'place_order'), Markup.button.callback('📞 ደውሉልን', 'call_us')],
@@ -337,12 +344,24 @@ Please send:
 
     this.bot.catch((err) => console.error('Bot error:', err));
     
-   if (!process.env.WEBHOOK_URL) {
-    await this.bot.launch();
-    console.log('🤖 Bot running in polling mode');
-} else {
-    console.log('🤖 Bot running in webhook mode');
-}
+    // ============================================================
+    // ⚠️ ቦቱን አንድ ጊዜ ብቻ ያስነሱ!
+    // ============================================================
+    try {
+      // Webhook ወይም Polling ለመወሰን
+      if (process.env.WEBHOOK_URL) {
+        console.log('🤖 Bot configured for webhook mode (started by index.js)');
+        // Webhook ሞድ - index.js ያስነሳል
+      } else {
+        // Long Polling ሞድ
+        await this.bot.launch();
+        this.isRunning = true;
+        console.log('🤖 Bot running in polling mode');
+      }
+    } catch (error) {
+      console.error('❌ Failed to launch bot:', error.message);
+      throw error;
+    }
     
     process.once('SIGINT', () => this.bot.stop('SIGINT'));
     process.once('SIGTERM', () => this.bot.stop('SIGTERM'));
