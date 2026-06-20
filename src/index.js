@@ -5,58 +5,52 @@ const config = require('./config');
 const LuciaBot = require('./bot');
 const db = require('./database');
 
-// Validate telegram token early
+// 1. የቦት ቶከን ፍተሻ
 if (!process.env.TELEGRAM_BOT_TOKEN) {
   console.error('❌ CRITICAL ERROR: TELEGRAM_BOT_TOKEN missing in .env');
   process.exit(1);
 }
 
-// Try to use real Gemini AI, fallback to mock
+// 2. የ AI Client ማዋቀር
 let aiClient;
-
 try {
-  // 🛠️ ማስተካከያ 1: ከ Mock AI ፋይልህ ስም ጋር እንዳይጋጭ ጥንቃቄ ማድረግ
-  const GeminiClient = require('./ai-client'); 
+  // አንድ ጊዜ ሪኳየር ማድረግ ይበቃል
+  const AIModule = require('./ai-client'); 
   
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'YOUR_API_KEY') {
-    aiClient = new GeminiClient(process.env.GEMINI_API_KEY);
+    // GeminiClient በDestructuring ወይም በቀጥታ እንደ ክላስ መሆኑን አረጋግጥ
+    aiClient = new AIModule(process.env.GEMINI_API_KEY);
     console.log('✅ Using REAL Gemini AI');
   } else {
-    // 🛠️ ማስተካከያ 2: የ MockClient ክላስህ ሌላ ፋይል ከሆነ እሱን መጥራት (e.g., ./mock-client)
-    // እዚህ ጋ MockClient ራሱ ai-client ውስጥ ያለ ሌላ Export ከሆነ እንደ ሁኔታው ማስተካከል ይቻላል።
-    const MockClient = require('./ai-client'); 
-    aiClient = new MockClient('mock');
+    // MockClient በተመሳሳይ ፋይል ውስጥ ካለ
+    aiClient = new AIModule('mock');
     console.log('⚠️ Using MOCK AI (no API key)');
   }
 } catch (error) {
   console.error('⚠️ Warning during AI initialization:', error.message);
-  const MockClient = require('./ai-client');
-  aiClient = new MockClient('mock');
+  // ፋይሉ ካልተገኘ ወይም ከተሳሳተ ፌልባክ
+  try {
+    const AIModule = require('./ai-client');
+    aiClient = new AIModule('mock');
+  } catch (e) {
+    aiClient = { sendMessage: async () => ({ message: '⚠️ AI ለጊዜው አልሰራም።' }) };
+  }
   console.log('⚠️ Using MOCK AI (error loading Gemini)');
 }
 
-// 🛠️ ማስተካከያ 3: ለ Render Deployment የሚያስፈልግ አጭር የ Web Health Check ሰርቨር ማከል
+// 3. 🛠️ የክሮን ጆብ እና የሄልዝ ቼክ ማስተካከያ (አጭር ምላሽ)
 const http = require('http');
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Lucia Bot Status: ACTIVE\n');
+  res.end('OK'); // 👈 ይህች "OK" የምትለው ጽሁፍ የCron-Job.orgን 'Output too large' ኤረር ሙሉ በሙሉ ትፈታለች!
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 server.listen(PORT, () => {
   console.log(`🌐 Health check server listening on port ${PORT}`);
 });
 
-// በየ 10 ደቂቃው (600,000 ሚሊሰከንድ) ራሱን የሚቀሰቅስ ሎጂክ
-setInterval(() => {
-  // ⚠️ የእራስህን የRender URL እዚህ ተካው
-  https.get('https://lucia-ai-bot.onrender.com', (res) => {
-    console.log('🔄 Self-ping sent to keep bot awake! Status:', res.statusCode);
-  }).on('error', (err) => {
-    console.error('❌ Self-ping error:', err.message);
-  });
-}, 10 * 60 * 1000);
-// Start the bot
+// 4. ቦቱን ማስነሳት
 const bot = new LuciaBot(process.env.TELEGRAM_BOT_TOKEN, aiClient);
 bot.start()
   .then(() => {
